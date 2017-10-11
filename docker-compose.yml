@@ -1,0 +1,39 @@
+version: '2'
+
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./config/docker/certs:/etc/nginx/certs
+  
+  db:
+    image: mysql:5.7.17
+    expose:
+      - "3306"
+    volumes:
+      - "./.data/db:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - db
+    environment:
+      - VIRTUAL_HOST=phpmyadmin.symfony.dev
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ".:/var/www/app"
+    env_file: .env
+    depends_on:
+      - db
+    environment:
+      - VIRTUAL_HOST=*.symfony.dev
